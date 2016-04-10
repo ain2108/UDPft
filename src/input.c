@@ -24,13 +24,13 @@ int isGoodInputSender(char* filename, char * remote_IP, int remote_port,
 
   // Check for normality of windowsize.
   if(window_size <= 0){
-    fprintf(stderr,"Bad windowsize. Using default: %s\n", DEFAULT_WINDOW_SIZE);
+    die("Bad window size. Exit.\n");
     return 0;
   }
 
   // Check validity of whatever adress was provided
   if(!isValidAdress(remote_IP)){
-    die("Bad address for remote server");
+    die("Bad address for remote server. Exit.\n");
     return 0;
   }
   return 1;
@@ -140,7 +140,7 @@ int ipFromHostname(char * hostname, char * extractedIP){
     return 2;
   
   }else{
-    die("Some ungodly stuff is happening\n");
+    die("Some ungodly stuff is happening. Exit.\n");
     return 0;
   }
   return 0;

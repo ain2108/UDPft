@@ -28,4 +28,4 @@ $(TARGET2): $(OBJECTS)
 	$(CC) $(CCFLAGS) -c $<
 
 clean:
-	rm -f object_files/*.o $(TARGET)
+	rm -f object_files/*.o $(TARGET1) $(TARGET2)
