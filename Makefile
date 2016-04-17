@@ -2,7 +2,7 @@ CC=gcc
 
 INCLUDES= -Iincludes
 CCFLAGS= -g -Wall $(INCLUDES)
-LDFLAGS=
+LDFLAGS= -lpthread
 SOURCES=$(wildcard src/*.c)
 OBJECTS=$(SOURCES:.c=.o)
 TEMP=$(OBJECTS:src/%.o=%.o)

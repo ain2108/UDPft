@@ -1,7 +1,7 @@
 #include "helpers.h"
 #include "input.h"
 
-int sendToIPv4(char * filename){
+int sendToIPv4(char * filename, char * remote_IP, int remote_port, int ack_port_num){
 
   return 1;
 }
@@ -36,9 +36,10 @@ int main(int argc, char ** argv){
   if(0 == ipIsIPv4){
     die("Bad things\n");
   }else if(1 == ipIsIPv4){
-    fprintf(stdout, "IPv4: %s\n", IP);  
+    fprintf(stdout, "Sending to IPv4: %s\n", IP);
+    
   }else{
-    fprintf(stdout, "IPv6: %s\n", IP);  
+    fprintf(stdout, "Sending to IPv6: %s\n", IP);  
     
   }
   
