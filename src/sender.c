@@ -1,6 +1,6 @@
 #include "helpers.h"
 #include "input.h"
-#include "boss_thread.h"
+#include "packet.h"
 
 int sendToIPv4(char * filename, char * remote_IP, int remote_port, int ack_port_num){
 
@@ -57,17 +57,6 @@ int main(int argc, char ** argv){
     fprintf(stdout, "Sending to IPv6: %s\n", IP);
     
   }
-
-  /*
-  unsigned short test = 1;
-  fprintf(stdout, "test: %d\n", test);
-  char a[2];
-  strncpy(a, (const char *) &test, 2);
-  printBits(a, 2);
-  test = *((int *)a);
-  fprintf(stderr, "test dec: %d\n", test);
-  */
-  
 
   fprintf(stderr, "Sending %s...\n", argv[1]);
   Packet * pack = buildPacket(filename, ack_port_num, remote_port, 0);
