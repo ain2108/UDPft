@@ -1,5 +1,6 @@
 #include "helpers.h"
 #include "input.h"
+#include "boss_thread.h"
 
 int sendToIPv4(char * filename, char * remote_IP, int remote_port, int ack_port_num){
 
@@ -9,6 +10,20 @@ int sendToIPv4(char * filename, char * remote_IP, int remote_port, int ack_port_
 int sendToIPv6(char * filename){
 
   return 1;
+}
+
+void printBits(char * a, int numChars){
+
+  int j = 0;
+  while(j < numChars){
+    int i;
+    for (i = 7; i >= 0; i--) {
+      printf("%d", !!((a[j] << i) & 0x80));
+    }
+    j++;
+  }
+  printf("\n");
+  return;
 }
 
 
@@ -39,11 +54,29 @@ int main(int argc, char ** argv){
     fprintf(stdout, "Sending to IPv4: %s\n", IP);
     
   }else{
-    fprintf(stdout, "Sending to IPv6: %s\n", IP);  
+    fprintf(stdout, "Sending to IPv6: %s\n", IP);
     
   }
+
+  /*
+  unsigned short test = 1;
+  fprintf(stdout, "test: %d\n", test);
+  char a[2];
+  strncpy(a, (const char *) &test, 2);
+  printBits(a, 2);
+  test = *((int *)a);
+  fprintf(stderr, "test dec: %d\n", test);
+  */
   
+
+  fprintf(stderr, "Sending %s...\n", argv[1]);
+  Packet * pack = buildPacket(filename, ack_port_num, remote_port, 0);
+  free(pack);
+  // fprintf(stdout, "size of short: %lu\n", sizeof(unsigned short));
   fprintf(stdout, "Good input:)\n");
   return 0;
 
 }
+
+
+
