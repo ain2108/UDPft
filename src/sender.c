@@ -1,6 +1,7 @@
 #include "helpers.h"
 #include "input.h"
 #include "packet.h"
+#include "UDPsocket.h"
 
 int sendToIPv4(char * filename, char * remote_IP, int remote_port, int ack_port_num){
 
@@ -60,6 +61,10 @@ int main(int argc, char ** argv){
 
   fprintf(stderr, "Sending %s...\n", argv[1]);
   Packet * pack = buildPacket(filename, ack_port_num, remote_port, 0);
+  int sock = createIPv4UDPSocket();
+  struct sockaddr_in * servAddr = createIPv4ServAddr(remote_port, IP);
+  sendPacket(sock, servAddr, pack); 
+
   free(pack);
   // fprintf(stdout, "size of short: %lu\n", sizeof(unsigned short));
   fprintf(stdout, "Good input:)\n");
