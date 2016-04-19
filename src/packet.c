@@ -190,7 +190,7 @@ int processPacket(Packet * pack, char * filename){
 
 // Create an ack from seq_num
 Packet * createACK(int seq_num, unsigned short sport, unsigned short dport,
-		   int fin){
+ 		   int fin){
 
   // Packet
   Packet * pack = (Packet * ) malloc(sizeof(Packet));

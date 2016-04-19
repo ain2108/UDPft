@@ -14,6 +14,8 @@ int initSockMarket(MuxedSocket * market, int number){
   return 1;
 }
 
+
+// This function performs the file transmission
 int boss_threadIPv4(char * file_name, char * remote_IP,
 		    unsigned short remote_port, unsigned short ack_port_num,
 		    char * log_filename, int window_size){
@@ -41,6 +43,24 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   pthread_rwlock_t window_lock;
   pthread_rwlock_init(&window_lock, NULL);
 
+
+  // We shall start the sender here
+  int done = 0;
+  ToAckerThread * acker_args = (ToAckerThread *) malloc(sizeof(ToAckerThread));
+  acker_args->window = window;
+  acker_args->window_size = window_size;
+  acker_args->ack_port_num = ack_port_num;
+  acker_args->window_lock = &window_lock;
+  acker_args->done = &done;
+  
+  // Will mutlithread here
+  pthread_t acker;
+  int acker_err = pthread_create(&acker, NULL, acker_thread, (void *) acker_args);
+  if(acker_err != 0){
+    die("threading at send failed: ");
+  }
+  
+
   // We also need a counter, that is going to be incremented when a slot is going to be
   // made unavailable because extractData read beyond EOF
   int transmission_complete = 0;
@@ -49,7 +69,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   
   // Boss thread is going to walk the array in circle, asigning sending jobs to other threads 
   int i;
-  for(i = 0; transmission_complete == window_size; i = (i + 1) % window_size){
+  for(i = 0; transmission_complete >= window_size; i = (i + 1) % window_size){
 
     int seq_num;
     
@@ -90,6 +110,16 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
 
   }
 
+  // Still have to send FIN
+  Packet * ACK = createACK(0, ack_port_num, remote_port, 0);
+  while(!done){
+    sendPacket(market[0].socket, receiverAddr, ACK);
+    sleep(TIME_OUT);
+  }
+  free(ACK);
+
+  fprintf(stdout, "Transmission complete.\n");
+  
 
   // Cleanup
   sleep(1);
@@ -134,12 +164,119 @@ void * sender_thread(void * arg){
   }
 
   // Send the packet
-  pthread_mutex_lock(&(mysocket->sock_lock));
-  sendPacket(mysocket->socket, real_args->receiverAddr, pack);
-  pthread_mutex_unlock(&(mysocket->sock_lock)); 
+  while(1){
+    // Send the packet
+    pthread_mutex_lock(&(mysocket->sock_lock));
+    sendPacket(mysocket->socket, real_args->receiverAddr, pack);
+    pthread_mutex_unlock(&(mysocket->sock_lock));
 
+    // Sleep
+    sleep(TIME_OUT);
+
+    // Check if this thread was taken off duty
+    pthread_rwlock_wrlock(real_args->window_lock);
+    if(pthread_equal(real_args->slot->thread_on_duty, pthread_self())){
+      pthread_rwlock_unlock(real_args->window_lock); 
+      break;
+    }
+    
+    // if not, that means we have to resend the packet
+    pthread_rwlock_unlock(real_args->window_lock); 
+  }
+  
   // Cleanup
   free(pack);
   free(real_args);
   return NULL;
 }
+
+// This thread accepts ACKS and modifies the window accordingly
+void * acker_thread(void * arg){
+
+  // For my convenience
+  ToAckerThread * real_args = (ToAckerThread *) arg;
+  unsigned short listenPort = real_args->ack_port_num;
+  int window_size = real_args->window_size;
+  PacketStatus * window = real_args->window;
+  pthread_rwlock_t * window_lock = real_args->window_lock;
+
+  // Some logical declarations
+  int nextByte = MSS * window_size;
+  int next_seq_num = nextByte;
+  int sock = createIPv4UDPSocket();
+  struct sockaddr_in * self = createIPv4Listener(listenPort, sock);
+
+  // And some more declarations
+  int old_seq_num;
+  int position;
+  Packet * ACK;
+  int checkSum, newCheckSum;
+
+  
+  int fin = 0;
+  while(1){
+
+    // Get an ACK
+    ACK = receivePacket(sock, self);
+    printPacketHeader(ACK);
+
+    // Checksum calculation
+    checkSum = extractCheckSum(ACK);
+    newCheckSum = calculateChecksum(ACK);
+    if(checkSum != newCheckSum){
+      free(ACK);
+      continue;
+    }
+
+    // Check if it is FIN
+    fin = extractFIN(ACK);
+    if(fin){
+      free(ACK);
+      free(real_args);
+
+      // Let the main thread know that we are done
+      pthread_rwlock_wrlock(window_lock);
+      *(real_args->done) = 1;
+      pthread_rwlock_unlock(window_lock);
+
+      return NULL;
+    }
+
+    // Extract the former sequence number from the ack
+    old_seq_num = extractACKNum(ACK);
+    free(ACK);
+    
+    // Find the slot containing the old_seq_num
+    pthread_rwlock_rdlock(window_lock);
+    position = findPosInWindow(old_seq_num, window, window_size);
+    if(position == -1){
+      pthread_rwlock_unlock(window_lock);
+      continue;
+    }
+
+    nextByte += MSS;
+    next_seq_num = nextByte;
+
+    pthread_rwlock_unlock(window_lock);
+
+    // Now that we know what to change, we change it appropriately
+    pthread_rwlock_wrlock(window_lock);
+    window[position].seq_num = next_seq_num;
+    window[position].sent = 0;
+    window[position].thread_on_duty = 0;
+    pthread_rwlock_unlock(window_lock);
+  }
+
+  // Never reached
+  return NULL;
+}
+
+// Does what its name says
+int findPosInWindow(int seq_num, PacketStatus * window, int window_size){
+  int i = 0;
+  for(i = 0; i < window_size; i++){
+    if(window[i].seq_num == seq_num) return i;
+  }
+  return -1;
+}
+

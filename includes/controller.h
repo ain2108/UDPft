@@ -6,6 +6,7 @@
 #include "packet.h"
 
 #define NUMBER_OF_ACTIVE_SOCKETS 5
+#define TIME_OUT 1
 
 // Socket with locks
 typedef struct MuxedSocket{
@@ -38,13 +39,24 @@ typedef struct ToSenderThread{
   
 } ToSenderThread;
 
+typedef struct ToAckerThread{
+
+  PacketStatus * window;
+  int window_size;
+  unsigned short ack_port_num;
+  pthread_rwlock_t  * window_lock;
+  int * done;
+  
+} ToAckerThread;
+
 int initMuxedSocket(MuxedSocket * msock);
 int initSockMarket(MuxedSocket * market, int number);
 int boss_threadIPv4(char * file_name, char * remote_IP,
 		    unsigned short remote_port, unsigned short ack_port_num,
 		    char * log_filename, int window_size);
 void * sender_thread(void * arg);
-
+void * acker_thread(void * arg);
+int findPosInWindow(int seq_num, PacketStatus * window, int window_size);
 
 
 #endif

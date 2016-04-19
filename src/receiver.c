@@ -15,28 +15,37 @@ int main(int argc, char ** argv){
   struct sockaddr_in * self = createIPv4Listener(listenPort, sock);
   int ack_sock = createIPv4UDPSocket();
   struct sockaddr_in * ackAddr = createIPv4ServAddr(senderPort, senderIP); 
-  
+
+  Packet * ACK;
+  Packet * pack;
+  int seq_num;
   
   int fin = 0;
   while(!fin){
 
     // Receive a packet
-    Packet * pack = receivePacket(sock, self);
+    pack = receivePacket(sock, self);
     printPacketHeader(pack);
 
     // Write data
-    int seq_num = extractSeqNum(pack);
-    int fin = processPacket(pack, file_name);
+    seq_num = extractSeqNum(pack);
+    fin = processPacket(pack, file_name);
     free(pack);
 
     // Send ACK
-    Packet * ACK = createACK(seq_num, listenPort, senderPort, fin);
+    ACK = createACK(seq_num, listenPort, senderPort, fin);
     sendPacket(ack_sock, ackAddr, ACK);
     printPacketHeader(ACK);
     free(ACK);
     
   }
 
+  // Flood the sender with response ACKs
+  int brute = 0;
+  while(brute < 5){
+    ACK = createACK(seq_num, listenPort, senderPort, fin);
+    sendPacket(ack_sock, ackAddr, ACK);
+  }
   // Cleanup
   sleep(1);
   fprintf(stdout, "file transfer complete.\n");

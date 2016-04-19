@@ -2,6 +2,7 @@
 #include "input.h"
 #include "packet.h"
 #include "UDPsocket.h"
+#include "controller.h"
 
 int sendToIPv4(char * filename, char * remote_IP, int remote_port, int ack_port_num){
 
@@ -31,7 +32,7 @@ void printBits(char * a, int numChars){
 int main(int argc, char ** argv){
 
   // Extracting input
-  char * filename = argv[1];
+  char * file_name = argv[1];
   char * remote_IP = argv[2];
   int remote_port = atoi(argv[3]);
   int ack_port_num = atoi(argv[4]);
@@ -40,7 +41,7 @@ int main(int argc, char ** argv){
 
 
   // Before proceeding any further, check if the input is correct
-  if(!isGoodInputSender(filename, remote_IP, remote_port, ack_port_num, window_size)){
+  if(!isGoodInputSender(file_name, remote_IP, remote_port, ack_port_num, window_size)){
     return 0;
   }
 
@@ -53,19 +54,23 @@ int main(int argc, char ** argv){
     die("Bad things\n");
   }else if(1 == ipIsIPv4){
     fprintf(stdout, "Sending to IPv4: %s\n", IP);
+    boss_threadIPv4(file_name, remote_IP, remote_port, ack_port_num, log_filename, window_size);
+    
     
   }else{
     fprintf(stdout, "Sending to IPv6: %s\n", IP);
     
   }
 
+
+  /*
   fprintf(stderr, "Sending %s...\n", argv[1]);
   Packet * pack = buildPacket(filename, ack_port_num, remote_port, 0);
   int sock = createIPv4UDPSocket();
   struct sockaddr_in * servAddr = createIPv4ServAddr(remote_port, IP);
   sendPacket(sock, servAddr, pack); 
-
   free(pack);
+  */
   // fprintf(stdout, "size of short: %lu\n", sizeof(unsigned short));
   fprintf(stdout, "Good input:)\n");
   return 0;
