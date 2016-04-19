@@ -9,6 +9,7 @@ typedef struct PacketStatus{
   int seq_num;
   int sent;
   int acked;
+  pthread_t thread_on_duty;
   
 } PacketStatus;
 
@@ -32,7 +33,6 @@ typedef struct Packet{
 } Packet;
 
 void initPacketStatusDB(PacketStatus * PSDB, int size);
-int boss_thread_function(PacketStatus * PSDB, int window_size, int ack_port_num);
 int extractData(char * file_name, int offset, char * buffer);
 Packet * buildPacket(char * file_name, unsigned short sport,
 		unsigned short dport, unsigned int seq_num);

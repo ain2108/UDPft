@@ -1,8 +1,5 @@
 #include "packet.h"
 
-pthread_mutex_t boss_lock;
-
-
 // Function reads MSS bytes from offset, puts them into the buffer. 
 int extractData(char * file_name, int offset, char * buffer){
 
@@ -110,24 +107,17 @@ void printPacketHeader(Packet * pack){
   return;
 }
 
-void initPacketStatusDB(PacketStatus * PSDB, int size){
-  memset((char *) PSDB, 1, size * sizeof(Packet));
+// Initiate the status DB
+void initPacketStatusDB(PacketStatus * PSDB, int window_size){
+  memset((char *) PSDB, 1, window_size * sizeof(Packet));
   int i;
-  for(i = 0; i < size; i++){
-    PSDB[i].seq_num = i;
+  for(i = 0; i < window_size; i++){
+    PSDB[i].seq_num = i * MSS;
     PSDB[i].sent = 0;
     PSDB[i].acked = 0;
+    PSDB[i].thread_on_duty = 0;
   }
   return;
 }
 
-int boss_thread_function(PacketStatus * PSDB, int window_size, int ack_port_num){
-  // Start listening on the socket for ACKS
-  // When receive an Packet, look inside.
-  // Fetch the seq number
-  // Lock
-  // Access the DB and change acked=1
-  // Unlock
-  return 0;
-}
 
