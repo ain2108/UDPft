@@ -209,7 +209,7 @@ void * acker_thread(void * arg){
   // And some more declarations
   int old_seq_num;
   int position;
-  Packet * ACK;
+  
   int checkSum, newCheckSum;
 
   
@@ -217,7 +217,7 @@ void * acker_thread(void * arg){
   while(1){
 
     // Get an ACK
-    ACK = receivePacket(sock, self);
+    Packet * ACK = receivePacket(sock, self);
     printPacketHeader(ACK);
 
     // Checksum calculation

@@ -112,7 +112,7 @@ void printPacketHeader(Packet * pack){
 
 // Initiate the status DB
 void initPacketStatusDB(PacketStatus * PSDB, int window_size){
-  memset((char *) PSDB, 0, window_size * sizeof(Packet));
+  memset((char *) PSDB, 0, window_size * sizeof(PacketStatus));
   int i;
   for(i = 0; i < window_size; i++){
     PSDB[i].seq_num = i * MSS;

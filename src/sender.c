@@ -54,7 +54,7 @@ int main(int argc, char ** argv){
     die("Bad things\n");
   }else if(1 == ipIsIPv4){
     fprintf(stdout, "Sending to IPv4: %s\n", IP);
-    boss_threadIPv4(file_name, remote_IP, remote_port, ack_port_num, log_filename, window_size);
+    boss_threadIPv4(file_name, IP, remote_port, ack_port_num, log_filename, window_size);
     
     
   }else{
