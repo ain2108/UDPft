@@ -46,11 +46,13 @@ Packet * buildPacket(char * file_name, unsigned short sport,
 void printPacketHeader(Packet * pack);
 unsigned short calculateChecksum(Packet * pack);
 void * writer_thread(void * arg);
-int processPacket(Packet * pack, char * filename, int ack_sock);
+int processPacket(Packet * pack, char * filename);
 unsigned char extractFIN(Packet * pack);
 int extractSeqNum(Packet * pack);
 int extractACKNum(Packet * pack);
 int extractCheckSum(Packet * pack);
 
+Packet * createACK(int seq_num, unsigned short sport, unsigned short dport, int fin);
+void * writer_thread(void * arg); 
 
 #endif

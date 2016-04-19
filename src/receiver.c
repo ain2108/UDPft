@@ -1,7 +1,6 @@
 #include "packet.h"
 #include "UDPsocket.h"
 
-
 int main(int argc, char ** argv){
 
 
@@ -13,15 +12,31 @@ int main(int argc, char ** argv){
 
   
   int sock = createIPv4UDPSocket();
-  struct sockaddr_in * self = createIPv4Listener(listenPort, sock); 
+  struct sockaddr_in * self = createIPv4Listener(listenPort, sock);
 
-  Packet * pack = receivePacket(sock, self);
-  printPacketHeader(pack);
-
-  int ack_sock = 5;
-  int fin = processPacket(pack, file_name, ack_sock);
+  int ack_sock = createIPv4UDPSocket();
+  struct sockaddr_in * ackAddr = createIPv4ServAddr(senderPort, senderIP); 
   
-  free(pack);
+  
+  int fin = 0;
+  while(!fin){
+
+    // Receive a packet
+    Packet * pack = receivePacket(sock, self);
+    printPacketHeader(pack);
+
+    // Write data
+    int seq_num = extractSeqNum(pack);
+    int fin = processPacket(pack, file_name);
+    free(pack);
+
+    // Send ACK
+    Packet * ACK = createACK(seq_num, listenPort, senderPort, fin);
+    sendPacket(ack_sock, ackAddr, ACK);
+    
+    
+  }
+  sleep(2);
   free(self);
   return 0;
 

@@ -42,7 +42,7 @@ Packet * buildPacket(char * file_name, unsigned short sport,
   strncpy(pack->header.dport, (const char *) &dport, 2);
   strncpy(pack->header.seq_num, (const char *) &seq_num, 4);
 
-  int fin = 0;
+  // int fin = 0;
   // Reading the data from file into the Packet
   int bytesRead = extractData(file_name, seq_num, pack->data);
   //if(bytesRead != MSS){
@@ -88,12 +88,14 @@ void printPacketHeader(Packet * pack){
   unsigned char fin = *((unsigned char *) &pack->header.fun_stuff[1]);
   unsigned char length = *((unsigned char *) &pack->header.fun_stuff[0]); 
   unsigned short checkSum = *((unsigned short *)pack->header.inet_checksum);
+  unsigned int ack_num = *((int *)pack->header.ack_num);
   length = length >> 4;
   // Printing it
   fprintf(stderr, "Printing packet header...\n");
   fprintf(stderr, "Source Port: %d\n", sport);
   fprintf(stderr, "Destination Port: %d\n", dport);
   fprintf(stderr, "Sequence Num: %d\n", seq_num);
+  fprintf(stderr, "Ack Num: %d\n", ack_num); 
   fprintf(stderr, "Header length: %d\n", length);
   fprintf(stderr, "FIN: %d\n", fin);
   fprintf(stderr, "Checksum: %d\n", checkSum);
@@ -146,7 +148,7 @@ int extractCheckSum(Packet * pack){
 }
 
 // Check correctness of the packet, write its data to the file as necessary
-int processPacket(Packet * pack, char * filename, int ack_sock){
+int processPacket(Packet * pack, char * filename){
 
   // Check the checkSum
   unsigned short checkSum = extractCheckSum(pack);
@@ -181,10 +183,40 @@ int processPacket(Packet * pack, char * filename, int ack_sock){
     fprintf(stderr, "threading failed\n");
     return -1;
   }
-
-  // Create a thread that will send the appropriate ack
   
   return fin; 
+}
+
+// Create an ack from seq_num
+Packet * createACK(int seq_num, unsigned short sport, unsigned short dport,
+		   int fin){
+
+  // Packet
+  Packet * pack = (Packet * ) malloc(sizeof(Packet));
+  memset((char *) pack, 0, sizeof(Packet));
+
+  // Ports
+  strncpy(pack->header.sport, (const char *) &sport, 2);
+  strncpy(pack->header.dport, (const char *) &dport, 2);
+
+  // Ack number as a seq number
+  strncpy(pack->header.ack_num, (const char *) &seq_num, 4);
+
+  // Set the FIN in case this packet signifies the end of transmission
+  if(fin) pack->header.fun_stuff[1] |= 1 << 0;
+
+  // Set data size to 0 since there is not data in ACK
+  pack->data_size = 0;
+
+  // Header length
+  pack->header.fun_stuff[0] |= 1 << 4;
+  pack->header.fun_stuff[0] |= 1 << 6;
+
+  // Checksum
+  unsigned short checkSum =  calculateChecksum(pack);
+  strncpy(pack->header.inet_checksum, (const char *) &checkSum, 2); 
+
+  return pack;
 }
 
 // Writer thread
