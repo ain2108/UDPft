@@ -192,6 +192,7 @@ void * writer_thread(void * arg){
   // Opening the file
   ToWriterThread * real_args = arg;
   FILE * fp = fopen(real_args->filename, "ab");
+  fprintf(stderr, "writing into %s", real_args->filename);
   if(fp == NULL){
     die("failed to open the file:");
   }
