@@ -45,12 +45,12 @@ Packet * buildPacket(char * file_name, unsigned short sport,
   int fin = 0;
   // Reading the data from file into the Packet
   int bytesRead = extractData(file_name, seq_num, pack->data);
-  if(bytesRead != MSS){
-    fin = 1;
-  }
+  //if(bytesRead != MSS){
+  //  fin = 1;
+  //}
 
   // Set the fin bit
-  if(fin) pack->header.fun_stuff[1] |= 1 << 0;
+  // if(fin) pack->header.fun_stuff[1] |= 1 << 0;
   // Set the header length. No options => 20 bytes long => 5 => 0101 0000
   pack->header.fun_stuff[0] |= 1 << 4;
   pack->header.fun_stuff[0] |= 1 << 6;
@@ -119,5 +119,104 @@ void initPacketStatusDB(PacketStatus * PSDB, int window_size){
   }
   return;
 }
+
+
+// Extracts FIN from the packet
+unsigned char extractFIN(Packet * pack){
+  unsigned char fin = *((unsigned char *) &pack->header.fun_stuff[1]);
+  return fin;
+}
+
+// Extracts seq_num from the number
+int extractSeqNum(Packet * pack){
+  unsigned int seq_num = *((int *)pack->header.seq_num);
+  return seq_num; 
+}
+
+// Extracts ACK number
+int extractACKNum(Packet * pack){
+  unsigned int ack_num = *((int *)pack->header.ack_num);
+  return ack_num;
+}
+
+// Extracts the checkSum
+int extractCheckSum(Packet * pack){
+  unsigned short checkSum = *((unsigned short *)pack->header.inet_checksum);
+  return checkSum;
+}
+
+// Check correctness of the packet, write its data to the file as necessary
+int processPacket(Packet * pack, char * filename, int ack_sock){
+
+  // Check the checkSum
+  unsigned short checkSum = extractCheckSum(pack);
+  memset(pack->header.inet_checksum, 0, 2);
+  unsigned short newCheckSum = calculateChecksum(pack); 
+  if(checkSum != newCheckSum){
+    fprintf(stderr, "packet corrupted...\n");
+    return 0;
+  }
+
+  int fin = extractFIN(pack);
+  if(fin){
+    return fin;
+  }
+  
+  // Write data to the file
+  int bytesReceived = pack->data_size;
+  int offset = extractSeqNum(pack);
+
+  // Prepare the structure for the writer thread 
+  ToWriterThread * arg = (ToWriterThread *) malloc(sizeof(ToWriterThread));
+  memset( (char *) arg, 0, sizeof(ToWriterThread));
+  strcpy(arg->filename, filename);
+  strcpy(arg->data, pack->data);
+  arg->bytesReceived = bytesReceived;
+  arg->offset = offset;
+
+  // Creating the writer thread
+  pthread_t writer;
+  int err = pthread_create(&writer, NULL, writer_thread, (void *) arg);
+  if(err != 0){
+    fprintf(stderr, "threading failed\n");
+    return -1;
+  }
+
+  // Create a thread that will send the appropriate ack
+  
+  return fin; 
+}
+
+// Writer thread
+void * writer_thread(void * arg){
+  // Opening the file
+  ToWriterThread * real_args = arg;
+  FILE * fp = fopen(real_args->filename, "ab");
+  if(fp == NULL){
+    die("failed to open the file:");
+  }
+
+  // Move to the offset position
+  fseek(fp, real_args->offset, SEEK_SET);
+
+  // Write the bytes
+  size_t bytesWritten = 0;
+  if( (bytesWritten = fwrite(real_args->data, 1, real_args->bytesReceived, fp))
+      != real_args->bytesReceived){
+    die("fwrite() failed: ");
+  }
+
+  // Cleanup
+  fclose(fp);
+  free(real_args);
+  
+  return NULL;
+}
+
+
+
+
+
+
 
 

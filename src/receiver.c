@@ -18,6 +18,9 @@ int main(int argc, char ** argv){
   Packet * pack = receivePacket(sock, self);
   printPacketHeader(pack);
 
+  int ack_sock = 5;
+  int fin = processPacket(pack, file_name, ack_sock);
+  
   free(pack);
   free(self);
   return 0;

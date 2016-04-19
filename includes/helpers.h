@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 
 #define SMALLBUFFER 64
+#define MAX_FILE_NAME 128
 
 // Exit program 
 void die(char * message);
