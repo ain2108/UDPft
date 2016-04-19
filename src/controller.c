@@ -29,8 +29,8 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   initSockMarket(market, NUMBER_OF_ACTIVE_SOCKETS);
 
   // Initiate the ack listener socket
-  int ack_sock = createIPv4UDPSocket();
-  struct sockaddr_in * self = createIPv4Listener(ack_port_num, ack_sock);
+  //  int ack_sock = createIPv4UDPSocket();
+  // struct sockaddr_in * self = createIPv4Listener(ack_port_num, ack_sock);
 
   // We need an array of size window size made of PacketStatus's
   PacketStatus * window = (PacketStatus *) malloc(window_size * sizeof(PacketStatus));
@@ -69,7 +69,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   
   // Boss thread is going to walk the array in circle, asigning sending jobs to other threads 
   int i;
-  for(i = 0; transmission_complete >= window_size; i = (i + 1) % window_size){
+  for(i = 0; transmission_complete < window_size; i = (i + 1) % window_size){
 
     int seq_num;
     
@@ -123,7 +123,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
 
   // Cleanup
   sleep(1);
-  free(self);
+  // free(self);
   free(receiverAddr);
   free(window);
   // Close all sockets
@@ -142,6 +142,7 @@ void * sender_thread(void * arg){
   MuxedSocket * mysocket = &(real_args->market[dice]);
 
   // Extract data creating a packet
+  fprintf(stderr, "sending byte at %d\n", real_args->seq_num); 
   Packet * pack = buildPacket(real_args->file_name, real_args->sport,
 			      real_args->dport,
 			      real_args->seq_num);
