@@ -19,9 +19,31 @@ typedef struct SockMarket{
   MuxedSocket msocks[NUMBER_OF_ACTIVE_SOCKETS];  
 } SockMarket;
 
-int initMuxedSocket();
-int initSockMarket();
+typedef struct ToSenderThread{
 
+  // Interesting part
+  PacketStatus * slot;
+  pthread_rwlock_t  * window_lock;
+  int * counter;
+  pthread_mutex_t * counter_lock;
+  MuxedSocket * market;
+  struct sockaddr_in * receiverAddr;
+  int seq_num;
+  int position;
+
+  // Boring part
+  char * file_name;
+  unsigned short sport;
+  unsigned short dport;
+  
+} ToSenderThread;
+
+int initMuxedSocket(MuxedSocket * msock);
+int initSockMarket(MuxedSocket * market, int number);
+int boss_threadIPv4(char * file_name, char * remote_IP,
+		    unsigned short remote_port, unsigned short ack_port_num,
+		    char * log_filename, int window_size);
+void * sender_thread(void * arg);
 
 
 

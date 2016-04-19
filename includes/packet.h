@@ -8,7 +8,7 @@
 typedef struct PacketStatus{
   int seq_num;
   int sent;
-  int acked;
+  int available;
   pthread_t thread_on_duty;
   
 } PacketStatus;

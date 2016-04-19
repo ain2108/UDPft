@@ -45,6 +45,7 @@ Packet * buildPacket(char * file_name, unsigned short sport,
   // int fin = 0;
   // Reading the data from file into the Packet
   int bytesRead = extractData(file_name, seq_num, pack->data);
+  if(bytesRead == 0) return NULL; // In case fseek() after EOF
   //if(bytesRead != MSS){
   //  fin = 1;
   //}
@@ -111,12 +112,12 @@ void printPacketHeader(Packet * pack){
 
 // Initiate the status DB
 void initPacketStatusDB(PacketStatus * PSDB, int window_size){
-  memset((char *) PSDB, 1, window_size * sizeof(Packet));
+  memset((char *) PSDB, 0, window_size * sizeof(Packet));
   int i;
   for(i = 0; i < window_size; i++){
     PSDB[i].seq_num = i * MSS;
     PSDB[i].sent = 0;
-    PSDB[i].acked = 0;
+    PSDB[i].available = 1;
     PSDB[i].thread_on_duty = 0;
   }
   return;
