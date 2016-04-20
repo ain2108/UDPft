@@ -33,7 +33,8 @@ typedef struct Packet{
 } Packet;
 
 typedef struct ToWriterThread{
-  char filename[MAX_FILE_NAME + 1];
+  // char filename[MAX_FILE_NAME + 1];
+  FILE * filename;
   char data[MSS];
   int bytesReceived;
   int offset;  
@@ -46,7 +47,7 @@ Packet * buildPacket(char * file_name, unsigned short sport,
 void printPacketHeader(Packet * pack);
 unsigned short calculateChecksum(Packet * pack);
 void * writer_thread(void * arg);
-int processPacket(Packet * pack, char * filename);
+int processPacket(Packet * pack, FILE * filename);
 unsigned char extractFIN(Packet * pack);
 int extractSeqNum(Packet * pack);
 int extractACKNum(Packet * pack);

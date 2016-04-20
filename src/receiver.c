@@ -9,7 +9,7 @@ int main(int argc, char ** argv){
   unsigned short listenPort = atoi(argv[2]);
   unsigned short senderPort = atoi(argv[4]);
   char * senderIP = argv[3];
-  char * log_file = argv[5];
+  // char * log_file = argv[5];
   
   int sock = createIPv4UDPSocket();
   struct sockaddr_in * self = createIPv4Listener(listenPort, sock);
@@ -22,10 +22,10 @@ int main(int argc, char ** argv){
 
   // DBUGGING 
   FILE * fp = fopen(file_name, "wb");
-  fseek(fp, 10000, SEEK_SET);
-  char * end = "END";
-  fwrite(end, 1, 4, fp);
-  fclose(fp);
+  // fseek(fp, 10000, SEEK_SET);
+  // char * end = "END";
+  // fwrite(end, 1, 4, fp);
+  // fclose(fp);
   
   int fin = 0;
   while(!fin){
@@ -36,7 +36,7 @@ int main(int argc, char ** argv){
 
     // Write data
     seq_num = extractSeqNum(pack);
-    fin = processPacket(pack, file_name);
+    fin = processPacket(pack, fp);
     free(pack);
 
     // Send ACK

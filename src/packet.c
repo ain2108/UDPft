@@ -159,8 +159,23 @@ int extractCheckSum(Packet * pack){
   return checkSum;
 }
 
+// Function copies char array
+int copyArrayToArray(char * buffer, char * source, int number){
+
+  int i = 0;
+  for(i = 0; i < number; i++){
+    buffer[i] = source[i];
+  }
+
+  return 0;
+}
+
+
+
+
+
 // Check correctness of the packet, write its data to the file as necessary
-int processPacket(Packet * pack, char * filename){
+int processPacket(Packet * pack, FILE * filename){
 
   // Check the checkSum
   unsigned short checkSum = extractCheckSum(pack);
@@ -183,7 +198,8 @@ int processPacket(Packet * pack, char * filename){
   // Prepare the structure for the writer thread 
   ToWriterThread * arg = (ToWriterThread *) malloc(sizeof(ToWriterThread));
   memset( (char *) arg, 0, sizeof(ToWriterThread));
-  strcpy(arg->filename, filename);
+  // strcpy(arg->filename, filename);
+  arg->filename = filename;
   strncpy(arg->data, pack->data, MSS);
   arg->bytesReceived = bytesReceived;
   arg->offset = offset;
@@ -236,6 +252,7 @@ Packet * createACK(int seq_num, unsigned short sport, unsigned short dport,
 void * writer_thread(void * arg){
   // Opening the file
   ToWriterThread * real_args = arg;
+  /*
   FILE * fp = fopen(real_args->filename, "ab");
   fprintf(stderr, "writing into %s, offset %d\n", 
 	  real_args->filename,
@@ -243,9 +260,10 @@ void * writer_thread(void * arg){
 
   if(fp == NULL){
     die("failed to open the file:");
-  }
+  }*/
 
   // Move to the offset position
+  FILE * fp = real_args->filename;
   fseek(fp, real_args->offset, SEEK_SET);
 
   // Write the bytes
@@ -254,10 +272,10 @@ void * writer_thread(void * arg){
       != real_args->bytesReceived){
     die("fwrite() failed: ");
   }
-  fprintf(stderr, "done writing into %s\n", real_args->filename); 
+  fprintf(stderr, "done writing into \n"); //, real_args->filename); 
 
   // Cleanup
-  fclose(fp);
+  // fclose(fp);
   free(real_args);
   
   return NULL;
