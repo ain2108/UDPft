@@ -45,7 +45,7 @@ struct sockaddr_in * createIPv4Listener(unsigned short port, int sock){
 // Send a UDP packet through the socket.
 int sendPacket(int sock, struct sockaddr_in * servAddr, Packet * pack){
 
-  printf("Sending packet...\n");
+  // printf("Sending packet...\n");
  
   // Send the packet
   if(sendto(sock, (char *) pack, pack->data_size + 20, 0,

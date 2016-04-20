@@ -32,7 +32,7 @@ int main(int argc, char ** argv){
 
     // Receive a packet
     pack = receivePacket(sock, self);
-    printPacketHeader(pack);
+    // printPacketHeader(pack);
 
     // Write data
     seq_num = extractSeqNum(pack);
@@ -42,7 +42,7 @@ int main(int argc, char ** argv){
     // Send ACK
     ACK = createACK(seq_num, listenPort, senderPort, fin);
     sendPacket(ack_sock, ackAddr, ACK);
-    //    printPacketHeader(ACK);
+    printPacketHeader(ACK);
     free(ACK);
     sleep(1);
     

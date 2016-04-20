@@ -81,7 +81,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     }
     // Extract the sequence number and release the lock
     seq_num = window[i].seq_num;
-    fprintf(stderr, "===SEQ_NUM: %d===\n", seq_num);
+    // fprintf(stderr, "===SEQ_NUM: %d===\n", seq_num);
     window[i].sent = 1; 
     pthread_rwlock_unlock(&window_lock);
 
@@ -93,7 +93,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     args->market = market;
     args->receiverAddr = receiverAddr;
     args->seq_num = seq_num;
-    fprintf(stderr, "===SEQ_NUM: %d===\n", args->seq_num);
+    //    fprintf(stderr, "===SEQ_NUM: %d===\n", args->seq_num);
     args->position = i;
     args->file_name = file_name;
     args->sport = ack_port_num;
@@ -111,6 +111,11 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     pthread_rwlock_unlock(&window_lock);
 
   }
+
+  fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
+  fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
+  fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
+  fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
 
   // Still have to send FIN
   Packet * ACK = createACK(0, ack_port_num, remote_port, 0);
@@ -144,11 +149,11 @@ void * sender_thread(void * arg){
   MuxedSocket * mysocket = &(real_args->market[dice]);
 
   // Extract data creating a packet
-  fprintf(stderr, "sending byte at %d\n", real_args->seq_num); 
+  // fprintf(stderr, "sending byte at %d\n", real_args->seq_num); 
   Packet * pack = buildPacket(real_args->file_name, real_args->sport,
 			      real_args->dport,
 			      real_args->seq_num);
-  fprintf(stderr, "===PACKET TO SEND: SEQ_NUM: %d===\n", real_args->seq_num);
+  // fprintf(stderr, "===PACKET TO SEND: SEQ_NUM: %d===\n", real_args->seq_num);
   // Need to check. If pack == NULL, fseek() over EOF => make the slot unavailable.
   if(pack == NULL){
 
@@ -215,7 +220,8 @@ void * acker_thread(void * arg){
   
   int checkSum, newCheckSum;
 
-  
+  fprintf(stderr, "++++++ACKER THREAD INITIATED+++++++\n");
+
   int fin = 0;
   while(1){
 
@@ -225,12 +231,15 @@ void * acker_thread(void * arg){
 
     // Checksum calculation
     checkSum = extractCheckSum(ACK);
+
+    // Erase the checksum field and recalculate the chacksum
+    memset((char *) ACK->header.inet_checksum, 0, 2);
     newCheckSum = calculateChecksum(ACK);
     if(checkSum != newCheckSum){
       free(ACK);
       continue;
     }
-
+    // fprintf(stderr, "++++++CHECKSUM PASSED+++++++\n");
     // Check if it is FIN
     fin = extractFIN(ACK);
     if(fin){
@@ -256,10 +265,10 @@ void * acker_thread(void * arg){
       pthread_rwlock_unlock(window_lock);
       continue;
     }
-
+    
+    fprintf(stderr, "++++++++ old_seq: %d postion: %d ++++++", old_seq_num, position);
     nextByte += MSS;
     next_seq_num = nextByte;
-
     pthread_rwlock_unlock(window_lock);
 
     // Now that we know what to change, we change it appropriately
@@ -279,6 +288,7 @@ int findPosInWindow(int seq_num, PacketStatus * window, int window_size){
   int i = 0;
   for(i = 0; i < window_size; i++){
     if(window[i].seq_num == seq_num) return i;
+    fprintf(stderr, "%d != %d", window[i].seq_num, seq_num);
   }
   return -1;
 }
