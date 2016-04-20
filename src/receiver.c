@@ -37,6 +37,10 @@ int main(int argc, char ** argv){
     seq_num = extractSeqNum(pack);
     fin = processPacket(pack, fp);
     free(pack);
+    if(fin == -1){
+      fin = 0;
+      continue;
+    }
     if(fin == 1) break;
 
     // Send ACK

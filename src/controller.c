@@ -20,18 +20,14 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
 		    unsigned short remote_port, unsigned short ack_port_num,
 		    char * log_filename, int window_size){
 
-  // Create mutliple sending sockets
-  MuxedSocket * market = (MuxedSocket *) malloc(NUMBER_OF_ACTIVE_SOCKETS * sizeof(MuxedSocket));
-  memset((char *) market, 0, NUMBER_OF_ACTIVE_SOCKETS * sizeof(MuxedSocket));
+  // Logger file
+  // FILE * log = fopen(log_filename, "w");
+  // char * MyIP = getMyIPv4;
+  // fprintf(stderr, "host ip: %s", MyIP);
+
+  // Address where to send good stuff
   struct sockaddr_in * receiverAddr = createIPv4ServAddr(remote_port, remote_IP);
   
-  // Initiate all the sening sockets
-  initSockMarket(market, NUMBER_OF_ACTIVE_SOCKETS);
-
-  // Initiate the ack listener socket
-  //  int ack_sock = createIPv4UDPSocket();
-  // struct sockaddr_in * self = createIPv4Listener(ack_port_num, ack_sock);
-
   // We need an array of size window size made of PacketStatus's
   PacketStatus * window = (PacketStatus *) malloc(window_size * sizeof(PacketStatus));
   memset((char *) window, 0, window_size * sizeof(PacketStatus));
@@ -39,12 +35,11 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   // Initiate the packet status array
   initPacketStatusDB(window, window_size);
 
-  // We also need a read-write lock for the database
+  // We also need a read-write lock for the window
   pthread_rwlock_t window_lock;
   pthread_rwlock_init(&window_lock, NULL);
 
-
-  // We shall start the sender here
+  // We shall start the acker here
   int done = 0;
   ToAckerThread * acker_args = (ToAckerThread *) malloc(sizeof(ToAckerThread));
   acker_args->window = window;
@@ -81,7 +76,6 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     }
     // Extract the sequence number and release the lock
     seq_num = window[i].seq_num;
-    // fprintf(stderr, "===SEQ_NUM: %d===\n", seq_num);
     window[i].sent = 1; 
     pthread_rwlock_unlock(&window_lock);
 
@@ -90,10 +84,8 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     args->slot = &window[i];
     args->window_lock = &window_lock;
     args->counter_lock = &counter_lock;
-    args->market = market;
     args->receiverAddr = receiverAddr;
     args->seq_num = seq_num;
-    //    fprintf(stderr, "===SEQ_NUM: %d===\n", args->seq_num);
     args->position = i;
     args->file_name = file_name;
     args->sport = ack_port_num;
@@ -106,21 +98,21 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     if(err != 0){
       die("threading at send failed: ");
     }
+
+    // Save the thread id to give the acker the ability to cancel it
     pthread_rwlock_wrlock(&window_lock);
     window[i].thread_on_duty = sender;
     pthread_rwlock_unlock(&window_lock);
     
   }
 
-  fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
-  fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
-  fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
-  fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
+  fprintf(stdout, "Terminating...\n");
 
   // Still have to send FIN
   Packet * ACK = createACK(0, ack_port_num, remote_port, 0);
+  int socket = createIPv4UDPSocket();
   while(!done){
-    sendPacket(market[0].socket, receiverAddr, ACK);
+    sendPacket(socket, receiverAddr, ACK);
     sleep(TIME_OUT);
   }
   free(ACK);
@@ -130,12 +122,13 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
 
   // Cleanup
   sleep(1);
-  // free(self);
+  close(socket);
   free(receiverAddr);
   free(window);
-  // Close all sockets
-  // Clean market
-  // Close acking socket
+
+  // fclose(log);
+  // free(MyIP);
+  
   return 0;
 }
 
@@ -144,13 +137,7 @@ void * sender_thread(void * arg){
 
   ToSenderThread * real_args = arg;
 
-  
-  // Pick one of the sockets, be ready to lock on it.
-  int dice = real_args->position % NUMBER_OF_ACTIVE_SOCKETS;
-  MuxedSocket * mysocket = &(real_args->market[dice]);
-
   // Extract data creating a packet
-  // fprintf(stderr, "sending byte at %d\n", real_args->seq_num); 
   Packet * pack = buildPacket(real_args->file_name, real_args->sport,
 			      real_args->dport,
 			      real_args->seq_num);
@@ -159,9 +146,6 @@ void * sender_thread(void * arg){
   pthread_cleanup_push(free, pack);
   pthread_cleanup_push(free, real_args);
 
-
-
-  // fprintf(stderr, "===PACKET TO SEND: SEQ_NUM: %d===\n", real_args->seq_num);
   // Need to check. If pack == NULL, fseek() over EOF => make the slot unavailable.
   if(pack == NULL){
 
@@ -170,47 +154,27 @@ void * sender_thread(void * arg){
     real_args->slot->available = 0;
     pthread_rwlock_unlock(real_args->window_lock);
    
-
     // Increment the counter
     pthread_mutex_lock(real_args->counter_lock);
     ++(*(real_args->counter));
     pthread_mutex_unlock(real_args->counter_lock);
     
-    fprintf(stderr, "closing the slot %d\n", real_args->position);
     free(real_args);
     return NULL;
   }
 
+  // Get a UDP socket, and send the packet on it
   int socket = createIPv4UDPSocket();
   pthread_cleanup_push(close, socket);
-  int a;
+  
   // Send the packet
   while(1){
-    // Send the packet
-    // pthread_mutex_lock(&(mysocket->sock_lock));
-    // pthread_cleanup_push(fpthread_rwlock_unlock, real_args->sock_lock);
     sendPacket(socket, real_args->receiverAddr, pack);
-    a = extractSeqNum(pack);
-    fprintf(stderr, "thread %d in slot %d send byte %d \n", 
-	    pthread_self(), real_args->position, a);
-    // pthread_mutex_unlock(&(mysocket->sock_lock));
-    // pthread_cleanup_pop(0);
-
-    // Sleep
+    // Sleep, which in our case is the same as a timer
     sleep(TIME_OUT);
-    // Check if this thread was taken off duty
-    /*pthread_rwlock_wrlock(real_args->window_lock);
-    if(pthread_equal(real_args->slot->thread_on_duty, pthread_self())){
-      fprintf(stderr, "slot %d problem\n", real_args->position);
-      pthread_rwlock_unlock(real_args->window_lock);
-      break;
-    }
-    // if not, that means we have to resend the packet
-    pthread_rwlock_unlock(real_args->window_lock);*/ 
   }
-  fprintf(stderr, "%d thread at slot %d exiting\n", a, pthread_self());
+
   // Cleanup
-  
   pthread_cleanup_pop(1);
   pthread_cleanup_pop(1);
   pthread_cleanup_pop(1);
@@ -239,14 +203,13 @@ void * acker_thread(void * arg){
   
   int checkSum, newCheckSum;
 
-  fprintf(stderr, "++++++ACKER THREAD INITIATED+++++++\n");
+  //fprintf(stderr, "++++++ACKER THREAD INITIATED+++++++\n");
 
   int fin = 0;
   while(1){
 
     // Get an ACK
     Packet * ACK = receivePacket(sock, self);
-    // printPacketHeader(ACK);
 
     // Checksum calculation
     checkSum = extractCheckSum(ACK);
@@ -258,7 +221,7 @@ void * acker_thread(void * arg){
       free(ACK);
       continue;
     }
-    // fprintf(stderr, "++++++CHECKSUM PASSED+++++++\n");
+    
     // Check if it is FIN
     fin = extractFIN(ACK);
     if(fin){

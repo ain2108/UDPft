@@ -74,7 +74,23 @@ Packet * receivePacket(int sock, struct sockaddr_in * servAddr){
   return pack;
 }
 
+// Get my IPv4 address on eth0
+// broken
+char * getMyIPv4(){
 
+  int sock;
+  struct ifreq addresses;
+  sock = socket(AF_INET, SOCK_DGRAM, 0);
+  strncpy(addresses.ifr_name, "eth0", IFNAMSIZ-1); // Which interface
+  addresses.ifr_addr.sa_family = AF_INET; // Which family
+  ioctl(sock, SIOCGIFNETMASK, &addresses);
+
+  char * MyIPv4 = (char *) malloc(16);
+  memset(MyIPv4, 0, 16);
+
+  strncpy(MyIPv4, inet_ntoa(((struct sockaddr_in *) &addresses.ifr_addr)->sin_addr), 16);
+  return MyIPv4;
+}
 
 
 

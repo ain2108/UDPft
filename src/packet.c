@@ -186,7 +186,7 @@ int processPacket(Packet * pack, FILE * filename){
   unsigned short newCheckSum = calculateChecksum(pack); 
   if(checkSum != newCheckSum){
     fprintf(stderr, "packet corrupted...\n");
-    return 0;
+    return -1;
   }
 
   int fin = extractFIN(pack);
