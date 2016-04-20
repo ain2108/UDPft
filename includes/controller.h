@@ -27,7 +27,6 @@ typedef struct ToSenderThread{
   pthread_rwlock_t  * window_lock;
   int * counter;
   pthread_mutex_t * counter_lock;
-  MuxedSocket * market;
   struct sockaddr_in * receiverAddr;
   int seq_num;
   int position;
