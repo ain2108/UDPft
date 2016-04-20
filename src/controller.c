@@ -22,7 +22,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
 		    char * log_filename, int window_size){
 
   // Logger file
-  FILE * log = fopen(log_filename, "w");
+  FILE * log = fopen(log_filename, "a");
   if(log == NULL){
     die("fopen() log failed:");
   }
@@ -201,6 +201,7 @@ void * acker_thread(void * arg){
   int window_size = real_args->window_size;
   PacketStatus * window = real_args->window;
   pthread_rwlock_t * window_lock = real_args->window_lock;
+  FILE * log = real_args->log;
   pthread_mutex_t * log_lock = real_args->log_lock;
   char * myIP = real_args->myIP;
   char * remote_IP = real_args->remote_IP;
@@ -235,7 +236,22 @@ void * acker_thread(void * arg){
       free(ACK);
       continue;
     }
-    
+
+    ToLoggerThread * logger_args = (ToLoggerThread *) malloc(sizeof(ToLoggerThread));
+    logger_args->log = log;
+    logger_args->log_lock = log_lock;
+    logger_args->sourceIP = remote_IP;
+    logger_args->destinationIP = myIP;
+    logger_args->seq_num = extractSeqNum(ACK);
+    logger_args->ack_num = extractACKNum(ACK);
+
+    pthread_t logger;
+    int err = pthread_create(&logger, NULL, logger_thread, (void *) logger_args);
+    if(err != 0){
+      die("threading at send failed: ");
+    }
+
+ 
     // Check if it is FIN
     fin = extractFIN(ACK);
     if(fin){

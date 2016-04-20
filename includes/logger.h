@@ -14,6 +14,20 @@
 #define GET_RECEIVER_ADDRESS "./hostip.sh receiverip.txt"
 #define RECEIVER_IP_FILE "receiverip.sh"
 
-char * getMyIP(int receiver, int v6);
+#define LOG_ENTRY_SIZE 256
 
+typedef struct ToLoggerThread{
+  FILE * log;
+  pthread_mutex_t * log_lock;
+  char * sourceIP;
+  char * destinationIP;
+  int seq_num;
+  int ack_num;
+  int flag;
+
+} ToLoggerThread;
+
+
+char * getMyIP(int receiver, int v6);
+void * logger_thread(void * arg);
 #endif
