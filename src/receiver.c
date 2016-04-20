@@ -19,6 +19,13 @@ int main(int argc, char ** argv){
   Packet * ACK;
   Packet * pack;
   int seq_num;
+
+  // DBUGGING 
+  FILE * fp = fopen(file_name, "wb");
+  fseek(fp, 10000, SEEK_SET);
+  char * end = "END";
+  fwrite(end, 1, 4, fp);
+  fclose(fp);
   
   int fin = 0;
   while(!fin){
@@ -35,8 +42,9 @@ int main(int argc, char ** argv){
     // Send ACK
     ACK = createACK(seq_num, listenPort, senderPort, fin);
     sendPacket(ack_sock, ackAddr, ACK);
-    printPacketHeader(ACK);
+    //    printPacketHeader(ACK);
     free(ACK);
+    sleep(1);
     
   }
 

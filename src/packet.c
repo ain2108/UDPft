@@ -3,7 +3,7 @@
 // Function reads MSS bytes from offset, puts them into the buffer. 
 int extractData(char * file_name, int offset, char * buffer){
 
-  fprintf(stderr, "Extracting  %s...\n", file_name);  
+  // fprintf(stderr, "Extracting  %s...\n", file_name);  
   memset(buffer, 0 , MSS);
   FILE * fp = fopen(file_name, "rb");
   if(fp == NULL) die("fopen() failed:");
@@ -27,6 +27,17 @@ int extractData(char * file_name, int offset, char * buffer){
   return bytesRead;
 }
 
+int intIntoCharArray(char * buffer, unsigned int number){
+
+  char * temp = (char *)(&number);
+
+  int i = 0;
+  for(i = 0; i < sizeof(unsigned int); i++){
+    buffer[i] = temp[i];
+  }
+  return 0;
+}
+
 // Function builds a complete packet, readu to be sent. 
 Packet * buildPacket(char * file_name, unsigned short sport,
 		unsigned short dport, unsigned int seq_num){
@@ -36,22 +47,22 @@ Packet * buildPacket(char * file_name, unsigned short sport,
   // char * data 
   memset((char *) pack, 0, sizeof(Packet));
   // memset(data, 0, MSS * sizeof(char));
+  char * seq_numt = (const char *)(&seq_num);
 
   // Populating the header
   strncpy(pack->header.sport, (const char *) &sport, 2);
   strncpy(pack->header.dport, (const char *) &dport, 2);
-  strncpy(pack->header.seq_num, (const char *) &seq_num, 4);
+  
+  // Putting an int into the car array
+  intIntoCharArray(pack->header.seq_num, seq_num);
+  seq_num = extractSeqNum(pack);
+  
 
   // int fin = 0;
   // Reading the data from file into the Packet
   int bytesRead = extractData(file_name, seq_num, pack->data);
   if(bytesRead == 0) return NULL; // In case fseek() after EOF
-  //if(bytesRead != MSS){
-  //  fin = 1;
-  //}
-
-  // Set the fin bit
-  // if(fin) pack->header.fun_stuff[1] |= 1 << 0;
+  
   // Set the header length. No options => 20 bytes long => 5 => 0101 0000
   pack->header.fun_stuff[0] |= 1 << 4;
   pack->header.fun_stuff[0] |= 1 << 6;
@@ -61,7 +72,7 @@ Packet * buildPacket(char * file_name, unsigned short sport,
   unsigned short checkSum =  calculateChecksum(pack);
   strncpy(pack->header.inet_checksum, (const char *) &checkSum, 2);   
 
-  printPacketHeader(pack);
+  // printPacketHeader(pack);
   
   return pack;
 }
@@ -173,7 +184,7 @@ int processPacket(Packet * pack, char * filename){
   ToWriterThread * arg = (ToWriterThread *) malloc(sizeof(ToWriterThread));
   memset( (char *) arg, 0, sizeof(ToWriterThread));
   strcpy(arg->filename, filename);
-  strcpy(arg->data, pack->data);
+  strncpy(arg->data, pack->data, MSS);
   arg->bytesReceived = bytesReceived;
   arg->offset = offset;
 
@@ -201,7 +212,8 @@ Packet * createACK(int seq_num, unsigned short sport, unsigned short dport,
   strncpy(pack->header.dport, (const char *) &dport, 2);
 
   // Ack number as a seq number
-  strncpy(pack->header.ack_num, (const char *) &seq_num, 4);
+  // strncpy(pack->header.ack_num, (const char *) &seq_num, 4);
+  intIntoCharArray(pack->header.ack_num, seq_num);
 
   // Set the FIN in case this packet signifies the end of transmission
   if(fin) pack->header.fun_stuff[1] |= 1 << 0;
@@ -225,7 +237,10 @@ void * writer_thread(void * arg){
   // Opening the file
   ToWriterThread * real_args = arg;
   FILE * fp = fopen(real_args->filename, "ab");
-  fprintf(stderr, "writing into %s", real_args->filename);
+  fprintf(stderr, "writing into %s, offset %d\n", 
+	  real_args->filename,
+	  real_args->offset);
+
   if(fp == NULL){
     die("failed to open the file:");
   }
@@ -239,6 +254,7 @@ void * writer_thread(void * arg){
       != real_args->bytesReceived){
     die("fwrite() failed: ");
   }
+  fprintf(stderr, "done writing into %s\n", real_args->filename); 
 
   // Cleanup
   fclose(fp);

@@ -81,6 +81,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     }
     // Extract the sequence number and release the lock
     seq_num = window[i].seq_num;
+    fprintf(stderr, "===SEQ_NUM: %d===\n", seq_num);
     window[i].sent = 1; 
     pthread_rwlock_unlock(&window_lock);
 
@@ -92,6 +93,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     args->market = market;
     args->receiverAddr = receiverAddr;
     args->seq_num = seq_num;
+    fprintf(stderr, "===SEQ_NUM: %d===\n", args->seq_num);
     args->position = i;
     args->file_name = file_name;
     args->sport = ack_port_num;
@@ -146,7 +148,7 @@ void * sender_thread(void * arg){
   Packet * pack = buildPacket(real_args->file_name, real_args->sport,
 			      real_args->dport,
 			      real_args->seq_num);
-
+  fprintf(stderr, "===PACKET TO SEND: SEQ_NUM: %d===\n", real_args->seq_num);
   // Need to check. If pack == NULL, fseek() over EOF => make the slot unavailable.
   if(pack == NULL){
 

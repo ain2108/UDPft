@@ -31,6 +31,10 @@ void printBits(char * a, int numChars){
 
 int main(int argc, char ** argv){
 
+  if(argc != 7){
+    die("bad input\n");
+  }
+
   // Extracting input
   char * file_name = argv[1];
   char * remote_IP = argv[2];
