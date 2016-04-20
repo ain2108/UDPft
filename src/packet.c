@@ -196,6 +196,10 @@ int processPacket(Packet * pack, FILE * filename){
   
   // Write data to the file
   int bytesReceived = pack->data_size;
+  if(bytesReceived == 0){
+    fin = 1;
+    return fin;
+  }
   int offset = extractSeqNum(pack);
 
   // Prepare the structure for the writer thread 

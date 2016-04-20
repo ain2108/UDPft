@@ -38,6 +38,7 @@ int main(int argc, char ** argv){
     seq_num = extractSeqNum(pack);
     fin = processPacket(pack, fp);
     free(pack);
+    if(fin == 1) break;
 
     // Send ACK
     ACK = createACK(seq_num, listenPort, senderPort, fin);
@@ -53,6 +54,8 @@ int main(int argc, char ** argv){
   while(brute < 5){
     ACK = createACK(seq_num, listenPort, senderPort, fin);
     sendPacket(ack_sock, ackAddr, ACK);
+    printPacketHeader(ACK);
+    brute++;
   }
   // Cleanup
   sleep(1);

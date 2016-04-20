@@ -109,7 +109,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     pthread_rwlock_wrlock(&window_lock);
     window[i].thread_on_duty = sender;
     pthread_rwlock_unlock(&window_lock);
-
+    sleep(1);
   }
 
   fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
@@ -144,6 +144,7 @@ void * sender_thread(void * arg){
 
   ToSenderThread * real_args = arg;
 
+  
   // Pick one of the sockets, be ready to lock on it.
   int dice = real_args->position % NUMBER_OF_ACTIVE_SOCKETS;
   MuxedSocket * mysocket = &(real_args->market[dice]);
@@ -153,6 +154,13 @@ void * sender_thread(void * arg){
   Packet * pack = buildPacket(real_args->file_name, real_args->sport,
 			      real_args->dport,
 			      real_args->seq_num);
+  
+  // Prepare the cleanup for thread cancelation 
+  pthread_cleanup_push(free, pack);
+  pthread_cleanup_push(free, real_args);
+
+
+
   // fprintf(stderr, "===PACKET TO SEND: SEQ_NUM: %d===\n", real_args->seq_num);
   // Need to check. If pack == NULL, fseek() over EOF => make the slot unavailable.
   if(pack == NULL){
@@ -166,35 +174,39 @@ void * sender_thread(void * arg){
     pthread_mutex_lock(real_args->counter_lock);
     ++(*(real_args->counter));
     pthread_mutex_unlock(real_args->counter_lock);
-
+    
+    fprintf(stderr, "closing the slot %d\n", real_args->position);
     free(real_args);
     return NULL;
   }
 
+  int a;
   // Send the packet
   while(1){
     // Send the packet
     pthread_mutex_lock(&(mysocket->sock_lock));
     sendPacket(mysocket->socket, real_args->receiverAddr, pack);
+    a = extractSeqNum(pack);
+    fprintf(stderr, "thread %d in slot %d send byte %d \n", 
+	    pthread_self(), real_args->position, a);
     pthread_mutex_unlock(&(mysocket->sock_lock));
 
     // Sleep
     sleep(TIME_OUT);
-
     // Check if this thread was taken off duty
-    pthread_rwlock_wrlock(real_args->window_lock);
+    /*pthread_rwlock_wrlock(real_args->window_lock);
     if(pthread_equal(real_args->slot->thread_on_duty, pthread_self())){
-      pthread_rwlock_unlock(real_args->window_lock); 
+      fprintf(stderr, "slot %d problem\n", real_args->position);
+      pthread_rwlock_unlock(real_args->window_lock);
       break;
     }
-    
     // if not, that means we have to resend the packet
-    pthread_rwlock_unlock(real_args->window_lock); 
+    pthread_rwlock_unlock(real_args->window_lock);*/ 
   }
-  
+  fprintf(stderr, "%d thread at slot %d exiting\n", a, pthread_self());
   // Cleanup
-  free(pack);
-  free(real_args);
+  pthread_cleanup_pop(1);
+  pthread_cleanup_pop(1);
   return NULL;
 }
 
@@ -209,7 +221,7 @@ void * acker_thread(void * arg){
   pthread_rwlock_t * window_lock = real_args->window_lock;
 
   // Some logical declarations
-  int nextByte = MSS * window_size;
+  int nextByte = MSS * (window_size - 1);
   int next_seq_num = nextByte;
   int sock = createIPv4UDPSocket();
   struct sockaddr_in * self = createIPv4Listener(listenPort, sock);
@@ -227,7 +239,7 @@ void * acker_thread(void * arg){
 
     // Get an ACK
     Packet * ACK = receivePacket(sock, self);
-    printPacketHeader(ACK);
+    // printPacketHeader(ACK);
 
     // Checksum calculation
     checkSum = extractCheckSum(ACK);
@@ -266,16 +278,26 @@ void * acker_thread(void * arg){
       continue;
     }
     
-    fprintf(stderr, "++++++++ old_seq: %d postion: %d ++++++", old_seq_num, position);
+    // fprintf(stderr, "++++++++ old_seq: %d postion: %d ++++++\n", old_seq_num, position);
+    
+    // Check if the slot was not turned of by boss
+    if(window[position].available == 0){
+      pthread_rwlock_unlock(window_lock);
+      continue;
+    }
+    
     nextByte += MSS;
     next_seq_num = nextByte;
+
+    pthread_cancel(window[position].thread_on_duty);
     pthread_rwlock_unlock(window_lock);
 
     // Now that we know what to change, we change it appropriately
     pthread_rwlock_wrlock(window_lock);
     window[position].seq_num = next_seq_num;
+    fprintf(stderr, "%d -> %d\n", position, window[position].seq_num);
     window[position].sent = 0;
-    window[position].thread_on_duty = 0;
+    window[position].thread_on_duty = -1;
     pthread_rwlock_unlock(window_lock);
   }
 
@@ -288,7 +310,7 @@ int findPosInWindow(int seq_num, PacketStatus * window, int window_size){
   int i = 0;
   for(i = 0; i < window_size; i++){
     if(window[i].seq_num == seq_num) return i;
-    fprintf(stderr, "%d != %d", window[i].seq_num, seq_num);
+    //fprintf(stderr, "%d != %d", window[i].seq_num, seq_num);
   }
   return -1;
 }
