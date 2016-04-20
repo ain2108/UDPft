@@ -45,6 +45,10 @@ typedef struct ToAckerThread{
   unsigned short ack_port_num;
   pthread_rwlock_t  * window_lock;
   int * done;
+  FILE * log;
+  pthread_mutex_t * log_lock;
+  char * myIP;
+  char * remote_IP;
   
 } ToAckerThread;
 

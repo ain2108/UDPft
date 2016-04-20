@@ -23,8 +23,16 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
 
   // Logger file
   FILE * log = fopen(log_filename, "w");
-  char * MyIP = getMyIP(ME_SENDER, IP_V_4);
-  fprintf(stderr, "host ip: %s", MyIP);
+  if(log == NULL){
+    die("fopen() log failed:");
+  }
+  pthread_mutex_t log_lock;
+  pthread_mutex_init(&log_lock, NULL);  
+  
+
+  // Will be set to (nil) if there was some problem recovering IP.
+  char * myIP = getMyIP(ME_SENDER, IP_V_4);
+  fprintf(stderr, "host ip: %s", myIP);
 
   // Address where to send good stuff
   struct sockaddr_in * receiverAddr = createIPv4ServAddr(remote_port, remote_IP);
@@ -48,6 +56,10 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   acker_args->ack_port_num = ack_port_num;
   acker_args->window_lock = &window_lock;
   acker_args->done = &done;
+  acker_args->log = log;
+  acker_args->log_lock = &log_lock;
+  acker_args->myIP = myIP;
+  acker_args->remote_IP = remote_IP;
   
   // Will mutlithread here
   pthread_t acker;
@@ -126,9 +138,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   close(socket);
   free(receiverAddr);
   free(window);
-
-  // fclose(log);
-  // free(MyIP);
+  fclose(log);
   
   return 0;
 }
@@ -191,6 +201,9 @@ void * acker_thread(void * arg){
   int window_size = real_args->window_size;
   PacketStatus * window = real_args->window;
   pthread_rwlock_t * window_lock = real_args->window_lock;
+  pthread_mutex_t * log_lock = real_args->log_lock;
+  char * myIP = real_args->myIP;
+  char * remote_IP = real_args->remote_IP;
 
   // Some logical declarations
   int nextByte = MSS * (window_size - 1);
