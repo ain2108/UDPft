@@ -109,7 +109,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     pthread_rwlock_wrlock(&window_lock);
     window[i].thread_on_duty = sender;
     pthread_rwlock_unlock(&window_lock);
-    sleep(1);
+    
   }
 
   fprintf(stdout, "!!!!!!!!!Transmission complete!!!!!!!!!.\n");
@@ -154,7 +154,7 @@ void * sender_thread(void * arg){
   Packet * pack = buildPacket(real_args->file_name, real_args->sport,
 			      real_args->dport,
 			      real_args->seq_num);
-  
+ 
   // Prepare the cleanup for thread cancelation 
   pthread_cleanup_push(free, pack);
   pthread_cleanup_push(free, real_args);
@@ -166,9 +166,10 @@ void * sender_thread(void * arg){
   if(pack == NULL){
 
     // Signal that the slot is no longer available
-    pthread_rwlock_wrlock(real_args->window_lock);
+    pthread_rwlock_wrlock(real_args->window_lock);  
     real_args->slot->available = 0;
     pthread_rwlock_unlock(real_args->window_lock);
+   
 
     // Increment the counter
     pthread_mutex_lock(real_args->counter_lock);
@@ -180,16 +181,20 @@ void * sender_thread(void * arg){
     return NULL;
   }
 
+  int socket = createIPv4UDPSocket();
+  pthread_cleanup_push(close, socket);
   int a;
   // Send the packet
   while(1){
     // Send the packet
-    pthread_mutex_lock(&(mysocket->sock_lock));
-    sendPacket(mysocket->socket, real_args->receiverAddr, pack);
+    // pthread_mutex_lock(&(mysocket->sock_lock));
+    // pthread_cleanup_push(fpthread_rwlock_unlock, real_args->sock_lock);
+    sendPacket(socket, real_args->receiverAddr, pack);
     a = extractSeqNum(pack);
     fprintf(stderr, "thread %d in slot %d send byte %d \n", 
 	    pthread_self(), real_args->position, a);
-    pthread_mutex_unlock(&(mysocket->sock_lock));
+    // pthread_mutex_unlock(&(mysocket->sock_lock));
+    // pthread_cleanup_pop(0);
 
     // Sleep
     sleep(TIME_OUT);
@@ -205,6 +210,8 @@ void * sender_thread(void * arg){
   }
   fprintf(stderr, "%d thread at slot %d exiting\n", a, pthread_self());
   // Cleanup
+  
+  pthread_cleanup_pop(1);
   pthread_cleanup_pop(1);
   pthread_cleanup_pop(1);
   return NULL;

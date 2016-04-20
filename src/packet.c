@@ -256,35 +256,27 @@ Packet * createACK(int seq_num, unsigned short sport, unsigned short dport,
 }
 
 // Writer thread
+static pthread_mutex_t file_lock = PTHREAD_MUTEX_INITIALIZER;
 void * writer_thread(void * arg){
   // Opening the file
   ToWriterThread * real_args = arg;
-  /*
-  FILE * fp = fopen(real_args->filename, "ab");
-  fprintf(stderr, "writing into %s, offset %d\n", 
-	  real_args->filename,
-	  real_args->offset);
 
-  if(fp == NULL){
-    die("failed to open the file:");
-  }*/
-
+  // Lock the file to prevent errors
+  pthread_mutex_lock(&file_lock);
   // Move to the offset position
   FILE * fp = real_args->filename;
   fseek(fp, real_args->offset, SEEK_SET);
-
   // Write the bytes
   size_t bytesWritten = 0;
   if( (bytesWritten = fwrite(real_args->data, 1, real_args->bytesReceived, fp))
       != real_args->bytesReceived){
     die("fwrite() failed: ");
   }
-  fprintf(stderr, "done writing into \n"); //, real_args->filename); 
+  // Unlock the file
+  pthread_mutex_unlock(&file_lock);
 
   // Cleanup
-  // fclose(fp);
   free(real_args);
-  
   return NULL;
 }
 

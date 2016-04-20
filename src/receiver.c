@@ -9,24 +9,23 @@ int main(int argc, char ** argv){
   unsigned short listenPort = atoi(argv[2]);
   unsigned short senderPort = atoi(argv[4]);
   char * senderIP = argv[3];
-  // char * log_file = argv[5];
-  
+  char * log_file = argv[5];
+
+  // Our sockets
   int sock = createIPv4UDPSocket();
   struct sockaddr_in * self = createIPv4Listener(listenPort, sock);
   int ack_sock = createIPv4UDPSocket();
   struct sockaddr_in * ackAddr = createIPv4ServAddr(senderPort, senderIP); 
 
+  // Some more declarations
   Packet * ACK;
   Packet * pack;
   int seq_num;
-
-  // DBUGGING 
+ 
+  // Files
   FILE * fp = fopen(file_name, "wb");
-  // fseek(fp, 10000, SEEK_SET);
-  // char * end = "END";
-  // fwrite(end, 1, 4, fp);
-  // fclose(fp);
-  
+  FILE * log = fopen(log_file, "w");
+
   int fin = 0;
   while(!fin){
 
@@ -45,7 +44,6 @@ int main(int argc, char ** argv){
     sendPacket(ack_sock, ackAddr, ACK);
     printPacketHeader(ACK);
     free(ACK);
-    sleep(1);
     
   }
 
@@ -62,6 +60,7 @@ int main(int argc, char ** argv){
   fprintf(stdout, "file transfer complete.\n");
   free(self);
   free(ackAddr);
+  fclose(fp);
   return 0;
 
 }
