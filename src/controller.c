@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "logger.h"
 
 int initMuxedSocket(MuxedSocket * msock){
   msock->socket = createIPv4UDPSocket();
@@ -21,9 +22,9 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
 		    char * log_filename, int window_size){
 
   // Logger file
-  // FILE * log = fopen(log_filename, "w");
-  // char * MyIP = getMyIPv4;
-  // fprintf(stderr, "host ip: %s", MyIP);
+  FILE * log = fopen(log_filename, "w");
+  char * MyIP = getMyIP(ME_SENDER, IP_V_4);
+  fprintf(stderr, "host ip: %s", MyIP);
 
   // Address where to send good stuff
   struct sockaddr_in * receiverAddr = createIPv4ServAddr(remote_port, remote_IP);

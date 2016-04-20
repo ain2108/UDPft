@@ -76,7 +76,7 @@ Packet * receivePacket(int sock, struct sockaddr_in * servAddr){
 
 // Get my IPv4 address on eth0
 // broken
-char * getMyIPv4(){
+/*char * getMyIPv4(){
 
   int sock;
   struct ifreq addresses;
@@ -91,6 +91,7 @@ char * getMyIPv4(){
   strncpy(MyIPv4, inet_ntoa(((struct sockaddr_in *) &addresses.ifr_addr)->sin_addr), 16);
   return MyIPv4;
 }
+*/
 
 
 

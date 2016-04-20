@@ -11,7 +11,7 @@ struct sockaddr_in * createIPv4ServAddr(unsigned short port, char * IPv4);
 struct sockaddr_in * createIPv4Listener(unsigned short port, int sock);
 int sendPacket(int sock, struct sockaddr_in * servAddr, Packet * pack);
 Packet * receivePacket(int sock, struct sockaddr_in * servAddr);
-char * getMyIPv4();
+// char * getMyIPv4();
 
 
 #endif
