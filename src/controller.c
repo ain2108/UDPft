@@ -92,6 +92,22 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     window[i].sent = 1; 
     pthread_rwlock_unlock(&window_lock);
 
+    // Before sending a thread on the task, lets check that we are not over EOF
+    Packet * pack = buildPacket(file_name, ack_port_num, remote_port, seq_num);
+    if(pack == NULL){
+      // Signal that the slot is no longer available
+      pthread_rwlock_wrlock(&window_lock);  
+      window[i].available = 0;
+      pthread_rwlock_unlock(&window_lock);
+   
+      // Increment the counter
+      pthread_mutex_lock(&counter_lock);
+      ++transmission_complete;
+      pthread_mutex_unlock(&counter_lock);
+    }
+    free(pack);
+ 
+
     // Creating the args for sender_thread
     ToSenderThread * args = (ToSenderThread *) malloc(sizeof(ToSenderThread));
     args->slot = &window[i];
