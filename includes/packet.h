@@ -33,7 +33,6 @@ typedef struct Packet{
 } Packet;
 
 typedef struct ToWriterThread{
-  // char filename[MAX_FILE_NAME + 1];
   FILE * filename;
   char data[MSS];
   int bytesReceived;

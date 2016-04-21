@@ -111,22 +111,22 @@ void printPacketHeader(Packet * pack){
   unsigned int ack_num = *((int *)pack->header.ack_num);
   length = length >> 4;
   //  Printing it
-  ///fprintf(stderr, "Printing packet header...\n");
-  // fprintf(stderr, "Source Port: %d\n", sport);
-  // fprintf(stderr, "Destination Port: %d\n", dport);
-  fprintf(stderr, "<><><<><><><><><><><><><><><><><><>\n");
+  fprintf(stderr, "Printing packet header...\n");
+  fprintf(stderr, "Source Port: %d\n", sport);
+  fprintf(stderr, "Destination Port: %d\n", dport);
+  fprintf(stderr, "<><><><><><><><><><><><><><><><><><>\n");
   fprintf(stderr, "Sequence Num: %d\n", seq_num);
   fprintf(stderr, "Ack Num: %d\n", ack_num); 
-  // fprintf(stderr, "Header length: %d\n", length);
+  fprintf(stderr, "Header length: %d\n", length);
   fprintf(stderr, "FIN: %d\n", fin);
   fprintf(stderr, "Checksum: %d\n", checkSum);
   char temp[MSS + 1];
   memset(temp, 0, MSS + 1);
   strncpy(temp, pack->data, pack->data_size);
   strcat(temp, "\0");
-  //fprintf(stderr, "===DATA===:\n%s\n===END===\n", temp);
-  //fprintf(stderr, "DATA LENGTH: %d\n", pack->data_size);
-  //fprintf(stderr, "Done.\n");
+  fprintf(stderr, "===DATA===:\n%s\n===END===\n", temp);
+  fprintf(stderr, "DATA LENGTH: %d\n", pack->data_size);
+  fprintf(stderr, "Done.\n");
   fprintf(stderr, "<><><><><><><><><><><><><><><><><><>\n");
   return;
 }
@@ -187,8 +187,9 @@ int processPacket(Packet * pack, FILE * filename){
   unsigned short checkSum = extractCheckSum(pack);
   memset(pack->header.inet_checksum, 0, 2);
   unsigned short newCheckSum = calculateChecksum(pack); 
+  
+  // In case tha packet was corrupted
   if(checkSum != newCheckSum){
-    fprintf(stderr, "packet corrupted...\n");
     return -1;
   }
 

@@ -34,7 +34,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   
   // Will be set to (nil) if there was some problem recovering IP.
   char * myIP = getMyIP(ME_SENDER, IP_V_4);
-  fprintf(stderr, "host ip: %s", myIP);
+  fprintf(stderr, "Delivering: %s...\n", file_name);
 
 
   // We need an array of size window size made of PacketStatus's
@@ -180,7 +180,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   fprintf(stdout, "Delivery completed succesfully\n");
   fprintf(stdout, "Total bytes sent = %lu\n", totalBytesSent);
   fprintf(stdout, "Segments sent = %lu\n", totalSegmentsSent);
-  fprintf(stdout, "Segments retransmitted = %f%%\n", percentage);
+  fprintf(stdout, "Segments retransmitted = %.2f%%\n", percentage);
   
   return 0;
 }
