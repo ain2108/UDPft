@@ -189,6 +189,7 @@ int processPacket(Packet * pack, FILE * filename){
     return -1;
   }
 
+  // Checking the FIN
   int fin = extractFIN(pack);
   if(fin){
     return fin;

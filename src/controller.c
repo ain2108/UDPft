@@ -21,6 +21,9 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
 		    unsigned short remote_port, unsigned short ack_port_num,
 		    char * log_filename, int window_size){
 
+  // Address where to send good stuff
+  struct sockaddr_in * receiverAddr = createIPv4ServAddr(remote_port, remote_IP);
+  
   // Logger file
   FILE * log = fopen(log_filename, "a");
   if(log == NULL){
@@ -29,14 +32,11 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   pthread_mutex_t log_lock;
   pthread_mutex_init(&log_lock, NULL);  
   
-
   // Will be set to (nil) if there was some problem recovering IP.
   char * myIP = getMyIP(ME_SENDER, IP_V_4);
   fprintf(stderr, "host ip: %s", myIP);
 
-  // Address where to send good stuff
-  struct sockaddr_in * receiverAddr = createIPv4ServAddr(remote_port, remote_IP);
-  
+
   // We need an array of size window size made of PacketStatus's
   PacketStatus * window = (PacketStatus *) malloc(window_size * sizeof(PacketStatus));
   memset((char *) window, 0, window_size * sizeof(PacketStatus));
@@ -68,7 +68,6 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     die("threading at send failed: ");
   }
   
-
   // We also need a counter, that is going to be incremented when a slot is going to be
   // made unavailable because extractData read beyond EOF
   int transmission_complete = 0;
@@ -104,6 +103,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
       pthread_mutex_lock(&counter_lock);
       ++transmission_complete;
       pthread_mutex_unlock(&counter_lock);
+      continue;
     }
     free(pack);
  
@@ -195,6 +195,7 @@ void * sender_thread(void * arg){
   }
 
   ToLoggerThread * logger_args = (ToLoggerThread *) malloc(sizeof(ToLoggerThread));
+  memset((char *) logger_args, 0, sizeof(ToLoggerThread));
   logger_args->log = real_args->log;
   logger_args->log_lock = real_args->log_lock;
   logger_args->sourceIP = real_args->myIP;
@@ -279,15 +280,6 @@ void * acker_thread(void * arg){
 
     logger_thread(logger_args);
 
-    
-    // I am not using threads correctly, i realise this now. But too late:)
-    /*pthread_t logger;
-    int err = pthread_create(&logger, NULL, logger_thread, (void *) logger_args);
-    if(err != 0){
-      die("threading at send failed: ");
-      }*/
-
- 
     // Check if it is FIN
     fin = extractFIN(ACK);
     if(fin){

@@ -12,7 +12,7 @@
 #define ME_RECEIVER 1
 
 #define GET_RECEIVER_ADDRESS "./hostip.sh receiverip.txt"
-#define RECEIVER_IP_FILE "receiverip.sh"
+#define RECEIVER_IP_FILE "receiverip.txt"
 
 #define LOG_ENTRY_SIZE 256
 
