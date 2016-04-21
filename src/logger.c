@@ -72,6 +72,10 @@ void * logger_thread(void * arg){
   
   sprintf(integer, "%d, ", real_args->ack_num);
   strcat(entry, integer);
+  memset(integer, 0, 16);
+  
+  sprintf(integer, "%d, ", real_args->FIN);
+  strcat(entry, integer);
   
   if(real_args->flag == 0){
     memset(integer, 0, 16);

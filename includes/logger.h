@@ -23,6 +23,7 @@ typedef struct ToLoggerThread{
   char * destinationIP;
   int seq_num;
   int ack_num;
+  int FIN;
   int flag;
 
 } ToLoggerThread;

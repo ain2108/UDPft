@@ -120,7 +120,11 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     args->sport = ack_port_num;
     args->dport = remote_port;
     args->counter = &transmission_complete;
-    
+    args->log = log;
+    args->log_lock = &log_lock;
+    args->myIP = myIP;
+    args->remote_IP = remote_IP;
+  
     // Assign the sending of the packet to another thread
     pthread_t sender;
     int err = pthread_create(&sender, NULL, sender_thread, (void *) args);
@@ -189,6 +193,17 @@ void * sender_thread(void * arg){
     free(real_args);
     return NULL;
   }
+
+  ToLoggerThread * logger_args = (ToLoggerThread *) malloc(sizeof(ToLoggerThread));
+  logger_args->log = real_args->log;
+  logger_args->log_lock = real_args->log_lock;
+  logger_args->sourceIP = real_args->myIP;
+  logger_args->destinationIP = real_args->remote_IP;
+  logger_args->seq_num = real_args->seq_num;
+  logger_args->ack_num = 0;
+  logger_args->FIN = 0;
+
+  logger_thread(logger_args);
 
   // Get a UDP socket, and send the packet on it
   int socket = createIPv4UDPSocket();
@@ -260,6 +275,7 @@ void * acker_thread(void * arg){
     logger_args->destinationIP = myIP;
     logger_args->seq_num = extractSeqNum(ACK);
     logger_args->ack_num = extractACKNum(ACK);
+    logger_args->FIN = extractFIN(ACK);
 
     logger_thread(logger_args);
 
@@ -315,7 +331,7 @@ void * acker_thread(void * arg){
     // Now that we know what to change, we change it appropriately
     pthread_rwlock_wrlock(window_lock);
     window[position].seq_num = next_seq_num;
-    fprintf(stderr, "%d -> %d\n", position, window[position].seq_num);
+    // fprintf(stderr, "%d -> %d\n", position, window[position].seq_num);
     window[position].sent = 0;
     window[position].thread_on_duty = -1;
     pthread_rwlock_unlock(window_lock);

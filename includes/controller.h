@@ -35,6 +35,12 @@ typedef struct ToSenderThread{
   char * file_name;
   unsigned short sport;
   unsigned short dport;
+
+  // For the logger
+  FILE * log;
+  pthread_mutex_t * log_lock;
+  char * myIP;
+  char * remote_IP;
   
 } ToSenderThread;
 
