@@ -171,6 +171,16 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   free(receiverAddr);
   free(window);
   fclose(log);
+
+  // Stats, names are nonsensical... nvm that
+  segRetr = segRetr - totalSegmentsSent;
+  double percentage = ((double) segRetr / totalSegmentsSent) * 100;
+
+  // Printing stats
+  fprintf(stdout, "Delivery completed succesfully\n");
+  fprintf(stdout, "Total bytes sent = %lu\n", totalBytesSent);
+  fprintf(stdout, "Segments sent = %lu\n", totalSegmentsSent);
+  fprintf(stdout, "Segments retransmitted = %f%%\n", percentage);
   
   return 0;
 }
@@ -231,9 +241,20 @@ void * sender_thread(void * arg){
   pthread_cleanup_push(closeSock, holder);
   pthread_cleanup_push(free, holder);
 
-  // Send the packet
+  // Send the packe
+  pthread_mutex_lock(real_args->stat_lock);
+  ++(*(real_args->totalSegmentsSent));
+  pthread_mutex_unlock(real_args->stat_lock);
+
   while(1){
     sendPacket(socket, real_args->receiverAddr, pack);
+
+    // Stats
+    pthread_mutex_lock(real_args->stat_lock);
+    *(real_args->totalBytesSent) += (unsigned long) pack->data_size;
+    ++(*(real_args->segRetr));
+    pthread_mutex_unlock(real_args->stat_lock);
+
     // Sleep, which in our case is the same as a timer
     usleep(TIME_OUT);
   }
