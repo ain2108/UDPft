@@ -126,7 +126,7 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   int socket = createIPv4UDPSocket();
   while(!done){
     sendPacket(socket, receiverAddr, ACK);
-    sleep(TIME_OUT);
+    usleep(TIME_OUT);
   }
   free(ACK);
 
@@ -182,7 +182,7 @@ void * sender_thread(void * arg){
   while(1){
     sendPacket(socket, real_args->receiverAddr, pack);
     // Sleep, which in our case is the same as a timer
-    sleep(TIME_OUT);
+    usleep(TIME_OUT);
   }
 
   // Cleanup
@@ -245,11 +245,15 @@ void * acker_thread(void * arg){
     logger_args->seq_num = extractSeqNum(ACK);
     logger_args->ack_num = extractACKNum(ACK);
 
-    pthread_t logger;
+    logger_thread(logger_args);
+
+    
+    // I am not using threads correctly, i realise this now. But too late:)
+    /*pthread_t logger;
     int err = pthread_create(&logger, NULL, logger_thread, (void *) logger_args);
     if(err != 0){
       die("threading at send failed: ");
-    }
+      }*/
 
  
     // Check if it is FIN

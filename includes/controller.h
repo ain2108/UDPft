@@ -6,7 +6,7 @@
 #include "packet.h"
 
 #define NUMBER_OF_ACTIVE_SOCKETS 5
-#define TIME_OUT 1
+#define TIME_OUT 1000000 // 1*10^6 us = 1 sec, this value is in microseconds!
 
 // Socket with locks
 typedef struct MuxedSocket{

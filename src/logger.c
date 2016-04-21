@@ -75,7 +75,7 @@ void * logger_thread(void * arg){
   
   if(real_args->flag == 0){
     memset(integer, 0, 16);
-    sprintf(integer, "%d sec ", TIME_OUT);
+    sprintf(integer, "%d ", TIME_OUT);
     strcat(entry, integer);
   }
 
