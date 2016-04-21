@@ -41,7 +41,12 @@ typedef struct ToSenderThread{
   pthread_mutex_t * log_lock;
   char * myIP;
   char * remote_IP;
-  
+
+  // For statistics
+  pthread_mutex_t * stat_lock;
+  unsigned long * totalBytesSent;
+  unsigned long * totalSegmentsSent;
+  unsigned long * segRetr;
 } ToSenderThread;
 
 typedef struct ToAckerThread{

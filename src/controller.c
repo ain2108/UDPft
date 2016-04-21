@@ -72,7 +72,14 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   // made unavailable because extractData read beyond EOF
   int transmission_complete = 0;
   pthread_mutex_t counter_lock;
-  pthread_mutex_init(&counter_lock, NULL);  
+  pthread_mutex_init(&counter_lock, NULL);
+
+  // Statistics
+  pthread_mutex_t stat_lock;
+  pthread_mutex_init(&stat_lock, NULL);
+  unsigned long totalBytesSent = 0;
+  unsigned long totalSegmentsSent = 0;
+  unsigned long segRetr = 0;
   
   // Boss thread is going to walk the array in circle, asigning sending jobs to other threads 
   int i;
@@ -124,6 +131,11 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
     args->log_lock = &log_lock;
     args->myIP = myIP;
     args->remote_IP = remote_IP;
+    args->stat_lock = &stat_lock;
+    args->totalBytesSent = &totalBytesSent;
+    args->totalSegmentsSent = &totalSegmentsSent;
+    args->segRetr = &segRetr;
+
   
     // Assign the sending of the packet to another thread
     pthread_t sender;
@@ -161,6 +173,12 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   fclose(log);
   
   return 0;
+}
+
+// Tiny helper
+void closeSock(void * socket){
+  close(*((int*)socket));
+  return;
 }
 
 // This thread sends the packet to the client
@@ -207,9 +225,12 @@ void * sender_thread(void * arg){
   logger_thread(logger_args);
 
   // Get a UDP socket, and send the packet on it
+  int * holder = (int *) malloc(sizeof(int));
   int socket = createIPv4UDPSocket();
-  pthread_cleanup_push(close, socket);
-  
+  *holder = socket;
+  pthread_cleanup_push(closeSock, holder);
+  pthread_cleanup_push(free, holder);
+
   // Send the packet
   while(1){
     sendPacket(socket, real_args->receiverAddr, pack);
@@ -218,6 +239,7 @@ void * sender_thread(void * arg){
   }
 
   // Cleanup
+  pthread_cleanup_pop(1);
   pthread_cleanup_pop(1);
   pthread_cleanup_pop(1);
   pthread_cleanup_pop(1);
