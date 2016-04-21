@@ -4,12 +4,10 @@
  * Program receives a file from the sender program. Secure file transmission over UDP.
  */
 
-
 #include "packet.h"
 #include "UDPsocket.h"
 #include "logger.h"
 #include "input.h"
-
 
 int main(int argc, char ** argv){
   // Check correct number of args
