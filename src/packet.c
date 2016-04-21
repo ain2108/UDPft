@@ -180,10 +180,6 @@ int copyArrayToArray(char * buffer, char * source, int number){
   return 0;
 }
 
-
-
-
-
 // Check correctness of the packet, write its data to the file as necessary
 int processPacket(Packet * pack, FILE * filename){
 
@@ -240,11 +236,11 @@ Packet * createACK(int seq_num, unsigned short sport, unsigned short dport,
   memset((char *) pack, 0, sizeof(Packet));
 
   // Ports
-  strncpy(pack->header.sport, (const char *) &sport, 2);
-  strncpy(pack->header.dport, (const char *) &dport, 2);
+  shortIntoCharArray(pack->header.sport, sport);
+  shortIntoCharArray(pack->header.dport, dport);
+
 
   // Ack number as a seq number
-  // strncpy(pack->header.ack_num, (const char *) &seq_num, 4);
   intIntoCharArray(pack->header.ack_num, seq_num);
 
   // Set the FIN in case this packet signifies the end of transmission
