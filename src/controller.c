@@ -173,8 +173,8 @@ int boss_threadIPv4(char * file_name, char * remote_IP,
   fclose(log);
 
   // Stats, names are nonsensical... nvm that
-  segRetr = segRetr - totalSegmentsSent;
-  double percentage = ((double) segRetr / totalSegmentsSent) * 100;
+  unsigned long temp = segRetr - totalSegmentsSent;
+  double percentage = ((double) temp / segRetr) * 100;
 
   // Printing stats
   fprintf(stdout, "Delivery completed succesfully\n");
