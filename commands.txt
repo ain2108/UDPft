@@ -1,0 +1,3 @@
+./receiver result.txt 20000 athens.clic.cs.columbia.edu 22000 log_receiver.txt
+./sender file.txt 128.59.15.39 21000 22000 log_sender.txt 20
+./newudpl -o 128.59.15.35:20000 -i 128.59.15.40/* -p 21000:23000 -L 10 -B 100 -O 20
